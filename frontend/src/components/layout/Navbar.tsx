@@ -12,12 +12,14 @@ export default function Navbar() {
   const router = useRouter();
 
   useEffect(() => {
-    const stored = localStorage.getItem("solix_user");
-    if (stored) {
+  const stored = localStorage.getItem("solix_user");
+  if (stored) {
+    try {
       const user = JSON.parse(stored);
       setUserName(user.name);
-    }
-    fetchWeather()
+    } catch {}
+  }
+  fetchWeather()
       .then((data) => {
         console.log("Weather data:", data);
         setWeather(data);

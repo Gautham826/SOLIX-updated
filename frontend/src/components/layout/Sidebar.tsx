@@ -3,7 +3,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { cn } from "@/lib/utils";
 import {
-  LayoutDashboard, Zap, TrendingUp, BarChart3,
+  LayoutDashboard, Zap, TrendingUp,
   Lightbulb, Upload, Settings, Battery
 } from "lucide-react";
 
