@@ -1,92 +1,206 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardContent } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Lightbulb, Clock, TrendingUp, Zap, Battery } from "lucide-react";
 import { fetchRecommendations } from "@/lib/api";
 
-const iconMap: Record<string, any> = {
-  high: TrendingUp,
-  medium: Zap,
-  low: Battery,
+const iconMap: Record<string, string> = {
+  high: "trending_up",
+  medium: "bolt",
+  low: "battery_charging_full",
+};
+
+const priorityStyle: Record<string, string> = {
+  high: "bg-tertiary/15 text-tertiary",
+  medium: "bg-secondary/15 text-secondary",
+  low: "bg-accent-cyan/15 text-accent-cyan",
 };
 
 export default function RecommendationsPage() {
   const [recs, setRecs] = useState<any[]>([]);
+  const [applied, setApplied] = useState<Set<number>>(new Set());
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
   useEffect(() => {
-    fetchRecommendations().then((data) => {
-      setRecs(data);
-      setLoading(false);
-    });
+    fetchRecommendations()
+      .then((data) => {
+        setRecs(data);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || "Could not load recommendations");
+        setLoading(false);
+      });
   }, []);
 
+  function handleApply(id: number) {
+    setApplied((prev) => new Set([...prev, id]));
+  }
+
+  const pendingRecs = recs.filter((r) => !applied.has(r.id));
+  const totalSavings = pendingRecs.reduce((a, r) => a + (r.saving_amount || 0), 0);
+
+  const stats = [
+    {
+      label: "Total Potential Savings",
+      value: `₹${totalSavings}`,
+      sub: "From pending actions",
+      color: "text-secondary",
+      icon: "savings",
+      bg: "bg-secondary/10",
+    },
+    {
+      label: "Actions Available",
+      value: pendingRecs.length.toString(),
+      sub: "Pending review",
+      color: "text-accent-cyan",
+      icon: "task_alt",
+      bg: "bg-accent-cyan/10",
+    },
+    {
+      label: "Implemented This Week",
+      value: (12 + applied.size).toString(),
+      sub: "Actions taken",
+      color: "text-tertiary",
+      icon: "check_circle",
+      bg: "bg-tertiary/10",
+    },
+  ];
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Smart Recommendations</h1>
-        <p className="text-slate-500 mt-1">AI-generated actions to maximise savings and revenue</p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+          <span className="material-symbols-outlined">auto_awesome</span>
+        </div>
+        <div>
+          <h1 className="text-headline-md text-on-surface">Smart Recommendations</h1>
+          <p className="text-body-md text-on-surface-variant">
+            AI-generated actions to maximise savings and revenue
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        {[
-          { label: "Total Potential Savings", value: `₹${recs.reduce((a, r) => a + (r.saving_amount || 0), 0)}`, sub: "Today" },
-          { label: "Actions Available", value: recs.length.toString(), sub: "Pending review" },
-          { label: "Implemented This Week", value: "12", sub: "Actions taken" },
-        ].map((stat) => (
-          <Card key={stat.label} className="border-0 shadow-sm">
-            <CardContent className="p-6">
-              <p className="text-2xl font-bold text-slate-800">{stat.value}</p>
-              <p className="text-sm font-medium text-slate-600 mt-1">{stat.label}</p>
-              <p className="text-xs text-slate-400 mt-1">{stat.sub}</p>
-            </CardContent>
-          </Card>
+      {error && (
+        <div className="glass-card rounded-xl px-4 py-3 text-error text-body-md border-l-4 border-l-error">
+          {error}
+        </div>
+      )}
+
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {stats.map((stat) => (
+          <div key={stat.label} className="glass-card rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-10 h-10 ${stat.bg} rounded-lg flex items-center justify-center ${stat.color}`}>
+                <span className="material-symbols-outlined text-[20px]">{stat.icon}</span>
+              </div>
+            </div>
+            <p className={`text-headline-lg ${stat.color}`}>{stat.value}</p>
+            <p className="text-body-md text-on-surface-variant mt-1">{stat.label}</p>
+            <p className="text-label-md text-outline mt-1">{stat.sub}</p>
+          </div>
         ))}
       </div>
 
+      {/* Recommendations List */}
       {loading ? (
-        <p className="text-slate-400 text-sm">Loading recommendations...</p>
+        <p className="text-on-surface-variant text-body-md py-8 text-center">
+          Loading recommendations...
+        </p>
+      ) : recs.length === 0 ? (
+        <div className="glass-card rounded-2xl p-10 text-center">
+          <span className="material-symbols-outlined text-[40px] text-on-surface-variant mb-2">
+            lightbulb
+          </span>
+          <p className="text-body-md text-on-surface-variant">
+            No recommendations available yet.
+          </p>
+        </div>
       ) : (
-        <div className="space-y-4">
+        <div className="space-y-3">
           {recs.map((rec) => {
-            const Icon = iconMap[rec.priority] || Lightbulb;
+            const isApplied = applied.has(rec.id);
             return (
-              <Card key={rec.id} className="border-0 shadow-sm hover:shadow-md transition-shadow">
-                <CardContent className="p-6">
-                  <div className="flex items-start gap-4">
-                    <div className="w-12 h-12 bg-yellow-50 rounded-xl flex items-center justify-center shrink-0">
-                      <Icon className="w-6 h-6 text-yellow-500" />
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-1">
-                        <h3 className="font-semibold text-slate-800">{rec.recommendation}</h3>
-                        <Badge className={
-                          rec.priority === "high"
-                            ? "bg-green-100 text-green-800 hover:bg-green-100"
-                            : "bg-yellow-100 text-yellow-800 hover:bg-yellow-100"
-                        }>{rec.priority}</Badge>
-                      </div>
-                      <div className="flex items-center gap-4 mt-3">
-                        <span className="text-xs text-slate-400 flex items-center gap-1">
-                          <Clock className="w-3 h-3" /> {rec.action_time}
-                        </span>
-                        <span className="text-sm font-semibold text-green-600">
-                          Expected Saving: ₹{rec.saving_amount}
-                        </span>
-                      </div>
-                    </div>
-                    <button className="px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-700 transition-colors">
-                      Apply
-                    </button>
+              <div
+                key={rec.id}
+                className={`glass-card rounded-2xl p-5 transition-all ${
+                  isApplied
+                    ? "opacity-50 border border-tertiary/20"
+                    : "hover:border-primary/30"
+                }`}
+              >
+                <div className="flex items-start gap-4">
+                  <div
+                    className={`w-12 h-12 rounded-xl flex items-center justify-center shrink-0 ${
+                      isApplied ? "bg-tertiary/10 text-tertiary" : "bg-secondary/10 text-secondary"
+                    }`}
+                  >
+                    <span className="material-symbols-outlined">
+                      {isApplied ? "check_circle" : (iconMap[rec.priority] || "lightbulb")}
+                    </span>
                   </div>
-                </CardContent>
-              </Card>
+                  <div className="flex-1 min-w-0">
+                    <div className="flex items-center gap-2 mb-1 flex-wrap">
+                      <h3 className={`text-headline-md ${isApplied ? "text-on-surface-variant line-through" : "text-on-surface"}`}>
+                        {rec.recommendation}
+                      </h3>
+                      <span
+                        className={`text-label-md px-2.5 py-0.5 rounded-full ${
+                          isApplied
+                            ? "bg-tertiary/15 text-tertiary"
+                            : (priorityStyle[rec.priority] || "bg-primary/15 text-primary")
+                        }`}
+                      >
+                        {isApplied ? "applied" : rec.priority}
+                      </span>
+                    </div>
+                    <div className="flex items-center gap-4 mt-3 flex-wrap">
+                      <span className="text-label-md text-outline flex items-center gap-1">
+                        <span className="material-symbols-outlined text-[16px]">schedule</span>
+                        {rec.action_time}
+                      </span>
+                      <span className="text-label-md text-tertiary font-bold">
+                        Expected Saving: ₹{rec.saving_amount}
+                      </span>
+                    </div>
+                  </div>
+                  <button
+                    onClick={() => !isApplied && handleApply(rec.id)}
+                    disabled={isApplied}
+                    className={`px-4 py-2 text-label-md rounded-lg transition-all shrink-0 flex items-center gap-1.5 ${
+                      isApplied
+                        ? "bg-tertiary/15 text-tertiary cursor-default"
+                        : "bg-primary text-on-primary hover:brightness-110 active:scale-95"
+                    }`}
+                    suppressHydrationWarning
+                  >
+                    {isApplied ? (
+                      <>
+                        <span className="material-symbols-outlined text-[16px]">check</span>
+                        Applied
+                      </>
+                    ) : (
+                      "Apply"
+                    )}
+                  </button>
+                </div>
+              </div>
             );
           })}
+        </div>
+      )}
+
+      {/* Applied summary — shows when at least one is applied */}
+      {applied.size > 0 && (
+        <div className="glass-card rounded-xl px-4 py-3 flex items-center gap-3 border-l-4 border-l-tertiary">
+          <span className="material-symbols-outlined text-tertiary">check_circle</span>
+          <p className="text-body-md text-on-surface">
+            <span className="text-tertiary font-bold">{applied.size} recommendation{applied.size > 1 ? "s" : ""} applied</span>
+            {" "}— savings updated in the stats above.
+          </p>
         </div>
       )}
     </div>
   );
 }
-

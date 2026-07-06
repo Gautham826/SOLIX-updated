@@ -8,10 +8,10 @@ services:
       - key: DATABASE_URL
         sync: false
       - key: SECRET_KEY
-        value: solix-secret-key-2026-nexagrid
+        sync: false
       - key: ALGORITHM
         value: HS256
       - key: ACCESS_TOKEN_EXPIRE_MINUTES
         value: 30
       - key: OPENWEATHER_API_KEY
-        value: bda410e8ba4a4c380a207d0e7fe6f591
+        sync: false

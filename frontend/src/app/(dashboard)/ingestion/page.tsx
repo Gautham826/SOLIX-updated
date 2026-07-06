@@ -1,8 +1,6 @@
 "use client";
-import { useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Upload, CheckCircle, FileText, AlertCircle, Loader2 } from "lucide-react";
+import { useState, useRef } from "react";
+import { uploadMeterCsv } from "@/lib/api";
 
 const expectedColumns = ["timestamp", "consumption_kwh", "solar_generation_kwh"];
 
@@ -13,6 +11,7 @@ export default function IngestionPage() {
   const [error, setError] = useState("");
   const [preview, setPreview] = useState<any[]>([]);
   const [fileName, setFileName] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   async function handleFile(file: File) {
     if (!file.name.endsWith(".csv")) {
@@ -24,11 +23,10 @@ export default function IngestionPage() {
     setError("");
     setResult(null);
 
-    // Preview first 6 rows
     const text = await file.text();
     const lines = text.trim().split("\n");
-    const headers = lines[0].split(",").map(h => h.trim());
-    const rows = lines.slice(1, 7).map(line => {
+    const headers = lines[0].split(",").map((h) => h.trim());
+    const rows = lines.slice(1, 7).map((line) => {
       const values = line.split(",");
       return headers.reduce((obj: any, h, i) => {
         obj[h] = values[i]?.trim();
@@ -37,23 +35,12 @@ export default function IngestionPage() {
     });
     setPreview(rows);
 
-    // Upload to backend
     setUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("file", file);
-      const res = await fetch("http://127.0.0.1:8000/meter/upload-csv", {
-        method: "POST",
-        body: formData,
-      });
-      const data = await res.json();
-      if (res.ok) {
-        setResult(data);
-      } else {
-        setError(data.detail || "Upload failed");
-      }
-    } catch {
-      setError("Could not connect to server");
+      const data = await uploadMeterCsv(file);
+      setResult(data);
+    } catch (err: any) {
+      setError(err.message || "Could not connect to server");
     }
     setUploading(false);
   }
@@ -70,133 +57,214 @@ export default function IngestionPage() {
     if (file) handleFile(file);
   }
 
+  function reset() {
+    setResult(null);
+    setPreview([]);
+    setFileName("");
+    setError("");
+    if (fileInputRef.current) fileInputRef.current.value = "";
+  }
+
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Data Ingestion</h1>
-        <p className="text-slate-500 mt-1">Upload meter data CSVs to power your energy intelligence</p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-accent-cyan/10 flex items-center justify-center text-accent-cyan">
+          <span className="material-symbols-outlined">database</span>
+        </div>
+        <div>
+          <h1 className="text-headline-md text-on-surface">Data Ingestion</h1>
+          <p className="text-body-md text-on-surface-variant">
+            Upload meter data CSVs to power your energy intelligence
+          </p>
+        </div>
       </div>
 
       {/* Format Guide */}
-      <Card className="border-0 shadow-sm bg-slate-50">
-        <CardContent className="p-4">
-          <p className="text-sm font-medium text-slate-700 mb-2">Expected CSV Format:</p>
-          <code className="text-xs text-slate-600 bg-white px-3 py-2 rounded-lg block">
-            timestamp, consumption_kwh, solar_generation_kwh
-          </code>
-          <p className="text-xs text-slate-400 mt-2">
-            Example: 2026-06-15 09:00:00, 4.8, 9.4
-          </p>
-        </CardContent>
-      </Card>
+      <div className="glass-card rounded-xl p-4 border-l-4 border-l-accent-cyan">
+        <p className="text-label-md text-on-surface mb-2">Expected CSV Format</p>
+        <code className="text-label-md text-accent-cyan bg-surface-container-highest/40 px-3 py-2 rounded-lg block">
+          timestamp, consumption_kwh, solar_generation_kwh
+        </code>
+        <p className="text-label-md text-outline mt-2">
+          Example: 2026-06-15 09:00:00, 4.8, 9.4
+        </p>
+      </div>
 
       {/* Upload Area */}
-      <Card className="border-0 shadow-sm">
-        <CardContent className="p-8">
-          <div
-            onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={handleDrop}
-            className={`border-2 border-dashed rounded-xl p-12 text-center transition-colors ${
-              dragging
-                ? "border-yellow-400 bg-yellow-50"
-                : "border-slate-200 hover:border-yellow-300 hover:bg-slate-50"
-            }`}
-          >
-            {uploading ? (
-              <div className="flex flex-col items-center gap-3">
-                <Loader2 className="w-12 h-12 text-yellow-400 animate-spin" />
-                <p className="text-lg font-semibold text-slate-700">Uploading {fileName}...</p>
-                <p className="text-sm text-slate-500">Validating and storing in database</p>
-              </div>
-            ) : result ? (
-              <div className="flex flex-col items-center gap-3">
-                <CheckCircle className="w-12 h-12 text-green-500" />
-                <p className="text-lg font-semibold text-green-700">{fileName} uploaded successfully!</p>
-                <p className="text-sm text-slate-500">{result.message}</p>
-                <button
-                  onClick={() => { setResult(null); setPreview([]); setFileName(""); }}
-                  className="mt-2 px-4 py-2 bg-slate-900 text-white text-sm rounded-lg hover:bg-slate-700"
-                >
-                  Upload Another
-                </button>
-              </div>
-            ) : (
-              <label className="cursor-pointer flex flex-col items-center gap-3">
-                <Upload className="w-12 h-12 text-slate-400" />
-                <p className="text-lg font-semibold text-slate-700">Drop your CSV file here</p>
-                <p className="text-sm text-slate-500">or click to browse</p>
-                <div className="mt-2 bg-slate-100 rounded-lg px-4 py-2">
-                  <p className="text-xs text-slate-500 font-mono">
-                    timestamp, consumption_kwh, solar_generation_kwh
-                  </p>
-                </div>
-                <input
-                  type="file"
-                  accept=".csv"
-                  onChange={handleInputChange}
-                  className="hidden"
-                />
-              </label>
-            )}
+      <div className="glass-card rounded-2xl p-6">
+        {uploading ? (
+          /* Uploading state */
+          <div className="flex flex-col items-center gap-3 py-10">
+            <span className="material-symbols-outlined animate-spin text-primary text-[48px]">
+              progress_activity
+            </span>
+            <p className="text-headline-md text-on-surface">Uploading {fileName}...</p>
+            <p className="text-body-md text-on-surface-variant">
+              Validating and storing in database
+            </p>
           </div>
-
-          {error && (
-            <div className="mt-4 bg-red-50 border border-red-200 text-red-600 text-sm rounded-lg px-4 py-3 flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 shrink-0" />
-              {error}
+        ) : result ? (
+          /* Success state */
+          <div className="flex flex-col items-center gap-3 py-10">
+            <span className="material-symbols-outlined text-tertiary text-[56px]">
+              check_circle
+            </span>
+            <p className="text-headline-md text-tertiary">{fileName} uploaded successfully!</p>
+            <p className="text-body-md text-on-surface-variant">{result.message}</p>
+            <button
+              onClick={reset}
+              className="mt-2 px-6 py-2.5 bg-primary text-on-primary text-label-md rounded-xl hover:brightness-110 active:scale-95 transition-all flex items-center gap-2"
+              suppressHydrationWarning
+            >
+              <span className="material-symbols-outlined text-[18px]">upload_file</span>
+              Upload Another File
+            </button>
+          </div>
+        ) : (
+          /* Default upload state */
+          <div className="space-y-4">
+            {/* Drag & Drop Zone */}
+            <div
+              onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+              onDragLeave={() => setDragging(false)}
+              onDrop={handleDrop}
+              className={`border-2 border-dashed rounded-xl p-10 text-center transition-all ${
+                dragging
+                  ? "border-primary bg-primary/5 scale-[1.01]"
+                  : "border-outline-variant/40 hover:border-primary/40 hover:bg-primary/5"
+              }`}
+            >
+              <div className="flex flex-col items-center gap-3 pointer-events-none">
+                <div className={`w-16 h-16 rounded-2xl flex items-center justify-center transition-all ${
+                  dragging ? "bg-primary/20" : "bg-surface-container-highest/40"
+                }`}>
+                  <span className={`material-symbols-outlined text-[36px] ${
+                    dragging ? "text-primary" : "text-on-surface-variant"
+                  }`}>
+                    {dragging ? "download" : "upload_file"}
+                  </span>
+                </div>
+                <p className="text-headline-md text-on-surface">
+                  {dragging ? "Drop it here!" : "Drag & drop your CSV here"}
+                </p>
+                <p className="text-body-md text-on-surface-variant">
+                  {dragging ? "Release to upload" : "Supports .csv files only"}
+                </p>
+              </div>
             </div>
-          )}
-        </CardContent>
-      </Card>
+
+            {/* Divider */}
+            <div className="flex items-center gap-3">
+              <div className="flex-1 h-px bg-outline-variant/30" />
+              <span className="text-label-md text-outline">or</span>
+              <div className="flex-1 h-px bg-outline-variant/30" />
+            </div>
+
+            {/* Explicit Upload Button */}
+            <div className="flex flex-col items-center gap-3">
+              {fileName && !result && (
+                <div className="flex items-center gap-2 px-4 py-2 rounded-xl bg-surface-container-highest/40 border border-outline-variant/20">
+                  <span className="material-symbols-outlined text-accent-cyan text-[20px]">
+                    description
+                  </span>
+                  <span className="text-body-md text-on-surface">{fileName}</span>
+                  <button
+                    onClick={reset}
+                    className="text-outline hover:text-error transition-colors ml-1"
+                    suppressHydrationWarning
+                  >
+                    <span className="material-symbols-outlined text-[18px]">close</span>
+                  </button>
+                </div>
+              )}
+
+              <button
+                onClick={() => fileInputRef.current?.click()}
+                className="px-8 py-3 bg-primary text-on-primary text-label-md rounded-xl hover:brightness-110 active:scale-95 transition-all flex items-center gap-2 neo-glow-primary"
+                suppressHydrationWarning
+              >
+                <span className="material-symbols-outlined text-[20px]">upload</span>
+                Choose CSV File
+              </button>
+
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".csv"
+                onChange={handleInputChange}
+                className="hidden"
+              />
+
+              <p className="text-label-md text-outline">
+                timestamp, consumption_kwh, solar_generation_kwh
+              </p>
+            </div>
+          </div>
+        )}
+
+        {error && (
+          <div className="mt-4 glass-card rounded-xl px-4 py-3 text-error text-body-md border-l-4 border-l-error flex items-center gap-2">
+            <span className="material-symbols-outlined text-[20px]">error</span>
+            {error}
+          </div>
+        )}
+      </div>
 
       {/* Preview Table */}
       {preview.length > 0 && (
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <CardTitle className="text-base font-semibold text-slate-800 flex items-center gap-2">
-              <FileText className="w-4 h-4" />
-              Data Preview
-              <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100 ml-2">
-                First 6 rows
-              </Badge>
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b border-slate-100">
-                    {expectedColumns.map(col => (
-                      <th key={col} className="text-left py-3 px-4 text-slate-500 font-medium">
-                        {col}
-                      </th>
-                    ))}
-                    <th className="text-left py-3 px-4 text-slate-500 font-medium">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {preview.map((row, i) => (
-                    <tr key={i} className="border-b border-slate-50 hover:bg-slate-50">
-                      <td className="py-3 px-4 font-mono text-xs text-slate-600">
-                        {row.timestamp}
-                      </td>
-                      <td className="py-3 px-4 text-slate-700">{row.consumption_kwh}</td>
-                      <td className="py-3 px-4 text-slate-700">{row.solar_generation_kwh}</td>
-                      <td className="py-3 px-4">
-                        <Badge className="bg-green-100 text-green-700 hover:bg-green-100 flex items-center gap-1 w-fit">
-                          <CheckCircle className="w-3 h-3" /> Valid
-                        </Badge>
-                      </td>
-                    </tr>
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center gap-2 mb-4">
+            <span className="material-symbols-outlined text-accent-cyan text-[20px]">
+              table_view
+            </span>
+            <h3 className="text-headline-md text-on-surface">Data Preview</h3>
+            <span className="text-label-md px-2.5 py-0.5 rounded-full bg-accent-cyan/15 text-accent-cyan ml-1">
+              First 6 rows
+            </span>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full text-sm">
+              <thead>
+                <tr className="border-b border-outline-variant/30">
+                  {expectedColumns.map((col) => (
+                    <th
+                      key={col}
+                      className="text-left py-3 px-4 text-label-md text-on-surface-variant uppercase tracking-wider"
+                    >
+                      {col}
+                    </th>
                   ))}
-                </tbody>
-              </table>
-            </div>
-          </CardContent>
-        </Card>
+                  <th className="text-left py-3 px-4 text-label-md text-on-surface-variant uppercase tracking-wider">
+                    Status
+                  </th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-outline-variant/20">
+                {preview.map((row, i) => (
+                  <tr key={i} className="hover:bg-on-surface/5 transition-colors">
+                    <td className="py-3 px-4 font-mono text-label-md text-on-surface-variant">
+                      {row.timestamp}
+                    </td>
+                    <td className="py-3 px-4 text-body-md text-on-surface">
+                      {row.consumption_kwh}
+                    </td>
+                    <td className="py-3 px-4 text-body-md text-on-surface">
+                      {row.solar_generation_kwh}
+                    </td>
+                    <td className="py-3 px-4">
+                      <span className="text-label-md px-2.5 py-0.5 rounded-full bg-tertiary/15 text-tertiary flex items-center gap-1 w-fit">
+                        <span className="material-symbols-outlined text-[14px]">check_circle</span>
+                        Valid
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       )}
     </div>
   );
 }
-

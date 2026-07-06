@@ -1,121 +1,287 @@
 "use client";
-import React from "react";
-import { Zap, TrendingUp, Battery, BarChart3, ArrowRight, Sun, Shield, Globe } from "lucide-react";
 import Link from "next/link";
-
-const features = [
-  { icon: TrendingUp, title: "AI Forecasting", desc: "Prophet + LSTM models predict solar generation and demand with 94%+ accuracy", color: "text-yellow-500", bg: "bg-yellow-50" },
-  { icon: Battery, title: "Surplus Optimization", desc: "Automatically identify and monetize excess solar energy via IEX DAM/RTM markets", color: "text-green-500", bg: "bg-green-50" },
-  { icon: BarChart3, title: "OR-Tools Scheduling", desc: "Linear programming optimizes appliance scheduling to minimize grid import costs", color: "text-blue-500", bg: "bg-blue-50" },
-  { icon: Shield, title: "TNEB Integration", desc: "Works with existing TNEB/TANGEDCO meter data — no new hardware required", color: "text-purple-500", bg: "bg-purple-50" },
-  { icon: Globe, title: "IEX Market Access", desc: "Enables small prosumers to participate in energy markets through aggregators", color: "text-red-500", bg: "bg-red-50" },
-  { icon: Sun, title: "Weather Intelligence", desc: "Real-time weather data adjusts forecasts for cloud cover, temperature, and rain", color: "text-orange-500", bg: "bg-orange-50" },
-];
-
-const stats = [
-  { value: "15–25%", label: "Cost Reduction" },
-  { value: "94.2%", label: "Forecast Accuracy" },
-  { value: "₹342", label: "Daily Revenue Potential" },
-  { value: "0", label: "Hardware Changes Needed" },
-];
 
 export default function LandingPage() {
   return (
-    <div className="min-h-screen bg-slate-900 text-white">
-      {/* Navbar */}
-      <nav className="border-b border-slate-800 px-8 py-4 flex items-center justify-between">
-        <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-yellow-400 rounded-lg flex items-center justify-center">
-            <Zap className="w-5 h-5 text-slate-900" />
+    <div className="min-h-screen overflow-x-hidden text-white" style={{ backgroundColor: "#020617" }}>
+      {/* Nav */}
+      <header className="fixed top-0 w-full z-50 backdrop-blur-xl border-b border-white/10" style={{ backgroundColor: "rgba(2,6,23,0.8)" }}>
+        <nav className="flex justify-between items-center h-16 px-6 max-w-[1280px] mx-auto">
+          <span className="text-[28px] font-extrabold tracking-tighter" style={{ color: "#3B82F6" }}>
+            SOLIX
+          </span>
+          <div className="flex items-center gap-3">
+            <Link href="/login" className="text-base text-slate-300 hover:text-white transition-colors px-4 py-2">
+              Login
+            </Link>
+            <Link
+              href="/register"
+              className="text-white text-base px-6 py-2.5 rounded-full font-bold hover:brightness-110 active:scale-95 transition-all duration-200"
+              style={{ backgroundColor: "#3B82F6" }}
+            >
+              Get Started
+            </Link>
           </div>
-          <span className="text-xl font-bold text-yellow-400">SOLIX</span>
-        </div>
-        <div className="flex items-center gap-4">
-          <Link href="/login" className="text-slate-300 hover:text-white text-sm transition-colors">
-            Login
-          </Link>
-          <Link href="/register"
-            className="bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-semibold px-4 py-2 rounded-lg text-sm transition-colors">
-            Get Started
-          </Link>
-        </div>
-      </nav>
+        </nav>
+      </header>
 
-      {/* Hero */}
-      <section className="px-8 py-24 text-center max-w-4xl mx-auto">
-        <div className="inline-flex items-center gap-2 bg-yellow-400/10 border border-yellow-400/20 rounded-full px-4 py-1.5 mb-6">
-          <div className="w-2 h-2 bg-yellow-400 rounded-full animate-pulse" />
-          <span className="text-yellow-400 text-sm font-medium">AI for Social Impact • CHEMOVATE 2.0</span>
-        </div>
-        <h1 className="text-5xl font-bold leading-tight mb-6">
-          Transform Rooftop Solar Into{" "}
-          <span className="text-yellow-400">Intelligent Energy Revenue</span>
-        </h1>
-        <p className="text-slate-400 text-lg mb-8 max-w-2xl mx-auto">
-          SOLIX is an AI-powered retrofit layer that integrates with existing TNEB/TANGEDCO systems
-          to forecast, optimise, and automate energy decisions for households, MSMEs, and factories.
-        </p>
-        <div className="flex items-center justify-center gap-4">
-          <Link href="/register"
-            className="flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-semibold px-6 py-3 rounded-xl transition-colors">
-            Start Optimizing <ArrowRight className="w-4 h-4" />
-          </Link>
-          <Link href="/dashboard"
-            className="flex items-center gap-2 border border-slate-700 hover:border-slate-500 text-slate-300 px-6 py-3 rounded-xl transition-colors">
-            View Demo
-          </Link>
-        </div>
-      </section>
+      <main className="pt-16">
+        {/* Hero */}
+        <section className="relative flex items-center overflow-hidden px-6 py-14">
+          <div className="absolute top-1/4 -left-20 w-[450px] h-[450px] rounded-full blur-[120px]" style={{ backgroundColor: "rgba(59,130,246,0.18)" }} />
+          <div className="absolute bottom-0 right-0 w-96 h-96 rounded-full blur-[120px]" style={{ backgroundColor: "rgba(34,211,238,0.12)" }} />
 
-      {/* Stats */}
-      <section className="border-y border-slate-800 py-12 px-8">
-        <div className="max-w-4xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-8">
-          {stats.map((stat) => (
-            <div key={stat.label} className="text-center">
-              <p className="text-3xl font-bold text-yellow-400">{stat.value}</p>
-              <p className="text-slate-400 text-sm mt-1">{stat.label}</p>
-            </div>
-          ))}
-        </div>
-      </section>
-
-      {/* Features */}
-      <section className="px-8 py-20 max-w-6xl mx-auto">
-        <h2 className="text-3xl font-bold text-center mb-4">Everything You Need</h2>
-        <p className="text-slate-400 text-center mb-12">
-          A complete energy intelligence stack built for Tamil Nadu's prosumers
-        </p>
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {features.map((f) => {
-            const Icon = f.icon;
-            return (
-              <div key={f.title} className="bg-slate-800 border border-slate-700 rounded-xl p-6 hover:border-yellow-400/30 transition-colors">
-                <div className={`w-10 h-10 ${f.bg} rounded-lg flex items-center justify-center mb-4`}>
-                  <Icon className={`w-5 h-5 ${f.color}`} />
-                </div>
-                <h3 className="font-semibold text-white mb-2">{f.title}</h3>
-                <p className="text-slate-400 text-sm">{f.desc}</p>
+          <div className="relative z-10 max-w-[1280px] mx-auto w-full grid grid-cols-1 lg:grid-cols-2 gap-10 items-center">
+            <div className="flex flex-col gap-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full w-fit border" style={{ backgroundColor: "rgba(34,211,238,0.12)", borderColor: "rgba(34,211,238,0.3)" }}>
+                <span className="flex h-2 w-2 rounded-full ai-pulse" style={{ backgroundColor: "#22D3EE" }} />
+                <span className="text-sm font-semibold uppercase tracking-wider" style={{ color: "#22D3EE" }}>
+                  Live AI Energy OS v2.4
+                </span>
               </div>
-            );
-          })}
-        </div>
-      </section>
+              <h1 className="text-[44px] md:text-[52px] font-extrabold tracking-tight leading-[1.05] text-white">
+                Transform rooftop solar into{" "}
+                <span style={{ color: "#3B82F6" }}>intelligent energy revenue.</span>
+              </h1>
+              <p className="text-lg text-slate-400 max-w-xl leading-relaxed">
+                SOLIX AI is the operating system for solar energy — forecasting, surplus analysis,
+                optimization and IEX-grade trading recommendations for industries, MSMEs, and
+                prosumers.
+              </p>
+              <div className="flex flex-wrap gap-3 pt-2">
+                <Link
+                  href="/register"
+                  className="text-white text-xl px-7 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:shadow-[0_0_25px_rgba(59,130,246,0.5)] transition-all"
+                  style={{ backgroundColor: "#3B82F6" }}
+                >
+                  Start Trading
+                  <span className="material-symbols-outlined">trending_up</span>
+                </Link>
+                <Link
+                  href="/login"
+                  className="text-xl px-7 py-3.5 rounded-xl font-bold flex items-center gap-2 hover:bg-white/5 transition-all border border-white/15 text-white"
+                  style={{ backgroundColor: "#111827" }}
+                >
+                  <span className="material-symbols-outlined" style={{ fontVariationSettings: "'FILL' 1" }}>
+                    play_circle
+                  </span>
+                  Sign In
+                </Link>
+              </div>
+              <div className="flex flex-wrap gap-6 pt-5 border-t border-white/10">
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: "#3B82F6" }}>IEX DAM / RTM</span>
+                  <span className="text-2xl font-semibold text-white">Integrated</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: "#22D3EE" }}>Prophet • LSTM</span>
+                  <span className="text-2xl font-semibold text-white">AI Models</span>
+                </div>
+                <div className="flex flex-col">
+                  <span className="text-sm font-semibold uppercase tracking-widest" style={{ color: "#3B82F6" }}>TNEB Aligned</span>
+                  <span className="text-2xl font-semibold text-white">Retrofit</span>
+                </div>
+              </div>
+            </div>
 
-      {/* CTA */}
-      <section className="px-8 py-20 text-center border-t border-slate-800">
-        <h2 className="text-3xl font-bold mb-4">Ready to Optimize Your Energy?</h2>
-        <p className="text-slate-400 mb-8">Join SOLIX and start turning surplus solar into revenue</p>
-        <Link href="/register"
-          className="inline-flex items-center gap-2 bg-yellow-400 hover:bg-yellow-300 text-slate-900 font-semibold px-8 py-3 rounded-xl transition-colors">
-          Create Free Account <ArrowRight className="w-4 h-4" />
-        </Link>
-      </section>
+            {/* Hero visual card */}
+            <div className="relative lg:block hidden">
+              <div className="absolute -inset-8 rounded-full blur-[80px]" style={{ backgroundColor: "rgba(59,130,246,0.18)" }} />
+              <div className="p-6 rounded-3xl relative border border-white/15" style={{ backgroundColor: "#111827" }}>
+                <div className="flex items-center justify-between mb-5">
+                  <div className="flex items-center gap-2">
+                    <span className="w-2 h-2 rounded-full ai-pulse" style={{ backgroundColor: "#22D3EE" }} />
+                    <span className="text-sm font-semibold text-slate-300 uppercase tracking-wider">Live Grid Status</span>
+                  </div>
+                  <span className="material-symbols-outlined" style={{ color: "#3B82F6" }}>solar_power</span>
+                </div>
+                <div className="space-y-3">
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border" style={{ backgroundColor: "rgba(34,211,238,0.08)", borderColor: "rgba(34,211,238,0.2)" }}>
+                    <span className="text-slate-300 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px]" style={{ color: "#22D3EE" }}>wb_sunny</span>
+                      Solar Generation
+                    </span>
+                    <span className="font-bold" style={{ color: "#22D3EE" }}>+12.4 kWh</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border" style={{ backgroundColor: "rgba(59,130,246,0.08)", borderColor: "rgba(59,130,246,0.2)" }}>
+                    <span className="text-slate-300 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px]" style={{ color: "#3B82F6" }}>battery_charging_full</span>
+                      Surplus Available
+                    </span>
+                    <span className="font-bold" style={{ color: "#3B82F6" }}>Ready to export</span>
+                  </div>
+                  <div className="flex items-center justify-between p-3.5 rounded-xl border" style={{ backgroundColor: "rgba(59,130,246,0.08)", borderColor: "rgba(59,130,246,0.2)" }}>
+                    <span className="text-slate-300 flex items-center gap-2">
+                      <span className="material-symbols-outlined text-[20px]" style={{ color: "#3B82F6" }}>currency_rupee</span>
+                      Revenue Potential
+                    </span>
+                    <span className="font-bold" style={{ color: "#3B82F6" }}>₹342 / day</span>
+                  </div>
+                  <div className="h-28 rounded-2xl border border-white/5 flex items-end p-3 gap-1.5" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                    {[40, 65, 55, 85, 70, 95, 80].map((h, i) => (
+                      <div key={i} className="flex-1 rounded-t" style={{ height: `${h}%`, backgroundColor: "rgba(59,130,246,0.6)" }} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* Metrics */}
+        <section className="py-12 border-y border-white/10" style={{ backgroundColor: "#060d1f" }}>
+          <div className="max-w-[1280px] mx-auto px-6 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {[
+              { icon: "savings", value: "15-25%", label: "Cost Reduction", color: "#22D3EE" },
+              { icon: "query_stats", value: "94.2%", label: "Forecast Accuracy", color: "#3B82F6" },
+              { icon: "currency_rupee", value: "₹342", label: "Daily Potential", color: "#3B82F6" },
+            ].map((m) => (
+              <div key={m.label} className="flex items-center gap-5 group">
+                <div className="h-14 w-14 rounded-2xl border flex items-center justify-center group-hover:scale-110 transition-transform" style={{ backgroundColor: `${m.color}1a`, borderColor: `${m.color}33`, color: m.color }}>
+                  <span className="material-symbols-outlined text-[28px]">{m.icon}</span>
+                </div>
+                <div>
+                  <h4 className="text-[36px] font-extrabold" style={{ color: m.color }}>{m.value}</h4>
+                  <p className="text-sm font-semibold text-slate-500 uppercase tracking-wider">{m.label}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </section>
+
+        {/* Features */}
+        <section className="py-16 px-6 max-w-[1280px] mx-auto">
+          <div className="flex flex-col items-center text-center mb-10 gap-3">
+            <h2 className="text-[36px] font-extrabold text-white">
+              The OS for the <span style={{ color: "#3B82F6" }}>New Grid</span>
+            </h2>
+            <p className="text-lg text-slate-400 max-w-2xl">
+              An autonomous intelligence layer that bridges rooftop hardware and financial markets.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-12 gap-5 md:auto-rows-[1fr]">
+            <div className="md:col-span-8 rounded-3xl p-7 flex flex-col justify-between border border-white/10 transition-all duration-300 hover:border-white/20" style={{ backgroundColor: "#111827", borderTop: "2px solid rgba(59,130,246,0.5)" }}>
+              <div className="flex justify-between items-start">
+                <div className="flex flex-col gap-2">
+                  <span className="text-sm font-semibold px-3 py-1 rounded-full w-fit" style={{ color: "#3B82F6", backgroundColor: "rgba(59,130,246,0.15)" }}>
+                    Proprietary AI
+                  </span>
+                  <h3 className="text-[28px] font-bold text-white">Predictive Forecasting</h3>
+                  <p className="text-base text-slate-400 max-w-md">
+                    Hybrid Prophet + LSTM models process weather, historical generation, and grid
+                    factors to predict output within a 2.4% error margin.
+                  </p>
+                </div>
+                <div className="p-3.5 rounded-2xl" style={{ backgroundColor: "rgba(59,130,246,0.1)", color: "#3B82F6" }}>
+                  <span className="material-symbols-outlined text-[36px]">timeline</span>
+                </div>
+              </div>
+              <div className="mt-6 overflow-hidden rounded-2xl h-36 border border-white/5 flex items-end p-3 gap-1.5" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                {[30, 45, 38, 62, 50, 75, 60, 88, 70, 95, 82, 90].map((h, i) => (
+                  <div key={i} className="flex-1 rounded-t" style={{ height: `${h}%`, backgroundColor: "rgba(59,130,246,0.6)" }} />
+                ))}
+              </div>
+            </div>
+
+            <div className="md:col-span-4 md:row-span-2 rounded-3xl p-7 flex flex-col justify-between border border-white/10 transition-all duration-300 hover:border-white/20" style={{ backgroundColor: "#111827", borderTop: "2px solid rgba(34,211,238,0.5)" }}>
+              <div className="flex flex-col gap-3">
+                <div className="p-3.5 rounded-2xl w-fit" style={{ backgroundColor: "rgba(34,211,238,0.1)", color: "#22D3EE" }}>
+                  <span className="material-symbols-outlined text-[36px]">currency_exchange</span>
+                </div>
+                <h3 className="text-[28px] font-bold text-white">Surplus Monetization</h3>
+                <p className="text-base text-slate-400">
+                  Sell excess solar into the Day-Ahead (DAM) and Real-Time (RTM) markets via
+                  aggregators, based on optimized yield strategies.
+                </p>
+              </div>
+              <div className="mt-6 space-y-3">
+                <div className="flex justify-between items-center p-3.5 rounded-xl border" style={{ backgroundColor: "rgba(34,211,238,0.08)", borderColor: "rgba(34,211,238,0.2)" }}>
+                  <span className="text-slate-300">Current Pool</span>
+                  <span className="font-bold" style={{ color: "#22D3EE" }}>+12.4% yield</span>
+                </div>
+                <div className="flex justify-between items-center p-3.5 rounded-xl border" style={{ backgroundColor: "rgba(59,130,246,0.08)", borderColor: "rgba(59,130,246,0.2)" }}>
+                  <span className="text-slate-300">Risk Factor</span>
+                  <span className="font-bold" style={{ color: "#3B82F6" }}>Minimal</span>
+                </div>
+                <div className="h-28 rounded-xl border border-white/5 flex items-end p-3 gap-1.5 mt-3" style={{ backgroundColor: "rgba(255,255,255,0.03)" }}>
+                  {[50, 70, 60, 85, 75, 95].map((h, i) => (
+                    <div key={i} className="flex-1 rounded-t" style={{ height: `${h}%`, backgroundColor: "rgba(34,211,238,0.6)" }} />
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            <div className="md:col-span-4 rounded-3xl p-7 flex flex-col justify-between border border-white/10 transition-all duration-300 hover:border-white/20" style={{ backgroundColor: "#111827", borderTop: "2px solid rgba(34,211,238,0.5)" }}>
+              <div className="p-3.5 rounded-2xl w-fit mb-3" style={{ backgroundColor: "rgba(34,211,238,0.1)", color: "#22D3EE" }}>
+                <span className="material-symbols-outlined text-[28px]">bolt</span>
+              </div>
+              <div>
+                <h3 className="text-[28px] font-bold text-white">Grid Optimization</h3>
+                <p className="text-base text-slate-400">
+                  OR-Tools load balancing reduces peak-demand surcharges and maximizes
+                  self-consumption.
+                </p>
+              </div>
+            </div>
+
+            <div className="md:col-span-4 rounded-3xl p-7 flex flex-col justify-between border border-white/10 transition-all duration-300 hover:border-white/20" style={{ backgroundColor: "#111827", borderTop: "2px solid rgba(59,130,246,0.5)" }}>
+              <div className="p-3.5 rounded-2xl w-fit mb-3" style={{ backgroundColor: "rgba(59,130,246,0.1)", color: "#3B82F6" }}>
+                <span className="material-symbols-outlined text-[28px]">settings_input_component</span>
+              </div>
+              <div>
+                <h3 className="text-[28px] font-bold text-white">TNEB Integration</h3>
+                <p className="text-base text-slate-400">
+                  Works with existing TNEB / TANGEDCO meter data and net-metering — no new hardware.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* CTA */}
+        <section className="py-16 px-6">
+          <div className="max-w-[1280px] mx-auto rounded-[32px] p-1" style={{ backgroundColor: "#3B82F6" }}>
+            <div className="rounded-[30px] p-10 md:p-16 relative overflow-hidden flex flex-col items-center text-center" style={{ backgroundColor: "#020617" }}>
+              <div className="absolute -top-24 -left-24 w-96 h-96 rounded-full blur-[100px]" style={{ backgroundColor: "rgba(59,130,246,0.2)" }} />
+              <div className="absolute -bottom-24 -right-24 w-96 h-96 rounded-full blur-[100px]" style={{ backgroundColor: "rgba(34,211,238,0.15)" }} />
+              <h2 className="relative z-10 text-[36px] md:text-[44px] font-extrabold mb-4 max-w-3xl text-white">
+                Ready to turn <span style={{ color: "#22D3EE" }}>sunlight into capital?</span>
+              </h2>
+              <p className="relative z-10 text-lg text-slate-400 max-w-xl mb-8">
+                Join SOLIX and start turning surplus solar into revenue. Setup works with your
+                existing meter — no installation needed.
+              </p>
+              <div className="relative z-10 flex flex-wrap justify-center gap-3">
+                <Link
+                  href="/register"
+                  className="text-white text-xl px-8 py-4 rounded-2xl font-bold hover:scale-105 transition-transform flex items-center gap-2"
+                  style={{ backgroundColor: "#3B82F6" }}
+                >
+                  Get Started Now
+                  <span className="material-symbols-outlined">arrow_forward</span>
+                </Link>
+                <Link
+                  href="/login"
+                  className="text-xl px-8 py-4 rounded-2xl font-bold hover:bg-white/5 transition-all border border-white/15 text-white"
+                  style={{ backgroundColor: "#111827" }}
+                >
+                  Sign In
+                </Link>
+              </div>
+            </div>
+          </div>
+        </section>
+      </main>
 
       {/* Footer */}
-      <footer className="border-t border-slate-800 px-8 py-6 text-center">
-        <p className="text-slate-500 text-sm">
-          SOLIX v1.0 • Built by NexaGrid • CHEMOVATE 2.0 — AI for Social Impact
-        </p>
+      <footer className="w-full py-8 border-t border-white/10" style={{ backgroundColor: "#060d1f" }}>
+        <div className="max-w-[1280px] mx-auto px-6 flex flex-col md:flex-row justify-between items-center gap-4">
+          <span className="text-[22px] font-extrabold" style={{ color: "#3B82F6" }}>SOLIX</span>
+          <p className="text-sm text-slate-500 text-center">
+            © 2026 SOLIX • Built by NexaGrid — AI for Social Impact
+          </p>
+        </div>
       </footer>
     </div>
   );

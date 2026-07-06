@@ -1,23 +1,10 @@
 "use client";
-import { type ElementType } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { Zap, TrendingUp, TrendingDown, DollarSign, Battery, Sun, AlertTriangle, CheckCircle } from "lucide-react";
+import { useEffect, useState } from "react";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, BarChart, Bar, Legend
+  Tooltip, ResponsiveContainer, BarChart, Bar, Legend,
 } from "recharts";
-
-const energyData = [
-  { time: "00:00", solar: 0, consumption: 2.1, surplus: 0 },
-  { time: "03:00", solar: 0, consumption: 1.8, surplus: 0 },
-  { time: "06:00", solar: 1.2, consumption: 2.5, surplus: 0 },
-  { time: "09:00", solar: 8.4, consumption: 4.2, surplus: 4.2 },
-  { time: "12:00", solar: 12.6, consumption: 5.1, surplus: 7.5 },
-  { time: "15:00", solar: 10.2, consumption: 6.3, surplus: 3.9 },
-  { time: "18:00", solar: 3.1, consumption: 7.8, surplus: 0 },
-  { time: "21:00", solar: 0, consumption: 4.2, surplus: 0 },
-];
+import { fetchSurplus, fetchHourlyForecast } from "@/lib/api";
 
 const weeklyData = [
   { day: "Mon", generated: 42, consumed: 31, exported: 11 },
@@ -29,211 +16,223 @@ const weeklyData = [
   { day: "Sun", generated: 48, consumed: 25, exported: 23 },
 ];
 
-const kpis = [
-  {
-    title: "Solar Generated",
-    value: "18.4 kWh",
-    change: "+12% vs yesterday",
-    trend: "up",
-    icon: Sun,
-    color: "text-yellow-500",
-    bg: "bg-yellow-50",
-  },
-  {
-    title: "Current Consumption",
-    value: "5.2 kWh",
-    change: "-8% vs yesterday",
-    trend: "down",
-    icon: Zap,
-    color: "text-blue-500",
-    bg: "bg-blue-50",
-  },
-  {
-    title: "Surplus Available",
-    value: "7.6 kWh",
-    change: "Ready to export",
-    trend: "up",
-    icon: Battery,
-    color: "text-green-500",
-    bg: "bg-green-50",
-  },
-  {
-    title: "Est. Revenue",
-    value: "₹ 342",
-    change: "From IEX export",
-    trend: "up",
-    icon: DollarSign,
-    color: "text-purple-500",
-    bg: "bg-purple-50",
-  },
-];
-
-const alerts = [
-  {
-    type: "warning",
-    title: "Smart Recommendation",
-    message: "Export 7.6 kWh to IEX DAM at 14:00 — Expected revenue: ₹342",
-    badge: "Act Now",
-    badgeColor: "bg-yellow-400 text-yellow-900",
-    bg: "bg-yellow-50 border-yellow-200",
-    icon: AlertTriangle,
-    iconColor: "text-yellow-600",
-  },
-  {
-    type: "success",
-    title: "Forecast Update",
-    message: "Tomorrow's solar forecast: 46.8 kWh — 94.2% confidence (Prophet + LSTM)",
-    badge: "AI Forecast",
-    badgeColor: "bg-green-500 text-white",
-    bg: "bg-green-50 border-green-200",
-    icon: CheckCircle,
-    iconColor: "text-green-600",
-  },
-];
-
 export default function DashboardPage() {
+  const [surplus, setSurplus] = useState<any>(null);
+  const [hourly, setHourly] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    Promise.all([fetchSurplus(), fetchHourlyForecast()])
+      .then(([s, h]) => {
+        setSurplus(s);
+        setHourly(h);
+        setLoading(false);
+      })
+      .catch(() => setLoading(false));
+  }, []);
+
+  const solar = surplus?.solar_generated ?? 0;
+  const consumed = surplus?.consumed ?? 0;
+  const surplusKwh = surplus?.surplus ?? 0;
+  const revenue = surplus?.export_revenue_estimate ?? 0;
+
+  const kpis = [
+    {
+      title: "Solar Generated",
+      value: loading ? "..." : `${solar} kWh`,
+      change: "Live from DB",
+      trend: "up",
+      icon: "wb_sunny",
+      color: "text-secondary",
+      bg: "bg-secondary/10",
+    },
+    {
+      title: "Current Consumption",
+      value: loading ? "..." : `${consumed} kWh`,
+      change: "Live from DB",
+      trend: "down",
+      icon: "bolt",
+      color: "text-accent-cyan",
+      bg: "bg-accent-cyan/10",
+    },
+    {
+      title: "Surplus Available",
+      value: loading ? "..." : `${surplusKwh} kWh`,
+      change: surplusKwh > 0 ? "Ready to export" : "No surplus yet",
+      trend: surplusKwh > 0 ? "up" : "down",
+      icon: "battery_charging_full",
+      color: "text-tertiary",
+      bg: "bg-tertiary/10",
+    },
+    {
+      title: "Est. Revenue",
+      value: loading ? "..." : `₹ ${revenue}`,
+      change: "From IEX export",
+      trend: "up",
+      icon: "currency_rupee",
+      color: "text-secondary",
+      bg: "bg-secondary/10",
+    },
+  ];
+
+  const energyData = hourly.map((h) => ({
+    time: h.hour,
+    solar: h.predicted_solar,
+    consumption: h.predicted_load,
+    surplus: Math.max(0, h.predicted_solar - h.predicted_load),
+  }));
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-slate-800">Energy Overview</h1>
-          <p className="text-slate-500 mt-1">
-            Today's real-time energy intelligence • June 15, 2026
+          <h1 className="text-headline-md text-on-surface">Energy Overview</h1>
+          <p className="text-body-md text-on-surface-variant">
+            Today&apos;s real-time energy intelligence •{" "}
+            {new Date().toLocaleDateString("en-IN", {
+              day: "numeric",
+              month: "long",
+              year: "numeric",
+            })}
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse" />
-          <span className="text-sm text-green-600 font-medium">Live</span>
+          <span className="w-2 h-2 bg-tertiary rounded-full ai-pulse" />
+          <span className="text-label-md text-tertiary">Live</span>
         </div>
       </div>
 
-      {/* Alert Banners */}
-      <div className="space-y-3">
-        {alerts.map((alert, i) => {
-          const Icon = alert.icon as ElementType;
-          return (
-            <div key={i} className={`border rounded-lg p-4 flex items-center gap-3 ${alert.bg}`}>
-              <Icon className={`w-5 h-5 shrink-0 ${alert.iconColor}`} />
-              <div>
-                <p className="text-sm font-medium text-slate-800">{alert.title}</p>
-                <p className="text-sm text-slate-600">{alert.message}</p>
-              </div>
-              <Badge className={`ml-auto shrink-0 ${alert.badgeColor} hover:${alert.badgeColor}`}>
-                {alert.badge}
-              </Badge>
-            </div>
-          );
-        })}
+      {/* Forecast Update Banner */}
+      <div className="glass-card rounded-xl px-4 py-3 flex items-center gap-3 border-l-4 border-l-tertiary">
+        <div className="w-9 h-9 rounded-lg bg-tertiary/10 flex items-center justify-center text-tertiary shrink-0">
+          <span className="material-symbols-outlined text-[20px]">check_circle</span>
+        </div>
+        <div className="min-w-0">
+          <p className="text-label-md text-on-surface">Forecast Update</p>
+          <p className="text-body-md text-on-surface-variant truncate">
+            Tomorrow&apos;s solar forecast: 46.8 kWh — 94.2% confidence (Prophet + LSTM)
+          </p>
+        </div>
+        <span className="ml-auto shrink-0 text-label-md px-3 py-1 rounded-full bg-tertiary/15 text-tertiary">
+          AI Forecast
+        </span>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-4">
-        {kpis.map((kpi) => {
-          const Icon = kpi.icon as ElementType;
-          return (
-            <Card key={kpi.title} className="border-0 shadow-sm">
-              <CardContent className="p-6">
-                <div className="flex items-center justify-between mb-4">
-                  <div className={`w-10 h-10 ${kpi.bg} rounded-lg flex items-center justify-center`}>
-                    <Icon className={`w-5 h-5 ${kpi.color}`} />
-                  </div>
-                  {kpi.trend === "up"
-                    ? <TrendingUp className="w-4 h-4 text-green-500" />
-                    : <TrendingDown className="w-4 h-4 text-red-500" />}
-                </div>
-                <p className="text-2xl font-bold text-slate-800">{kpi.value}</p>
-                <p className="text-sm text-slate-500 mt-1">{kpi.title}</p>
-                <p className="text-xs text-green-600 mt-2 font-medium">{kpi.change}</p>
-              </CardContent>
-            </Card>
-          );
-        })}
+      <div className="grid grid-cols-2 xl:grid-cols-4 gap-3">
+        {kpis.map((kpi) => (
+          <div key={kpi.title} className="glass-card rounded-xl p-4">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-9 h-9 ${kpi.bg} rounded-lg flex items-center justify-center ${kpi.color}`}>
+                <span className="material-symbols-outlined text-[20px]">{kpi.icon}</span>
+              </div>
+              <span
+                className={`material-symbols-outlined text-[20px] ${
+                  kpi.trend === "up" ? "text-tertiary" : "text-error"
+                }`}
+              >
+                {kpi.trend === "up" ? "trending_up" : "trending_down"}
+              </span>
+            </div>
+            <p className="text-headline-md text-on-surface">{kpi.value}</p>
+            <p className="text-body-md text-on-surface-variant">{kpi.title}</p>
+            <p className="text-label-md text-tertiary mt-1.5">{kpi.change}</p>
+          </div>
+        ))}
       </div>
 
       {/* Charts */}
-      <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-slate-800">
-                Today's Energy Flow
-              </CardTitle>
-              <Badge className="bg-blue-100 text-blue-700 hover:bg-blue-100">Live</Badge>
+      <div className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-headline-md text-on-surface">Today&apos;s Energy Flow</h3>
+            <span className="text-label-md px-3 py-1 rounded-full bg-accent-cyan/15 text-accent-cyan">
+              Live
+            </span>
+          </div>
+          {loading ? (
+            <div className="h-[200px] flex items-center justify-center text-on-surface-variant text-body-md">
+              Loading chart...
             </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
+          ) : (
+            <ResponsiveContainer width="100%" height={200}>
               <AreaChart data={energyData}>
                 <defs>
                   <linearGradient id="solar" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#ffb95f" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#ffb95f" stopOpacity={0} />
                   </linearGradient>
                   <linearGradient id="consumption" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                    <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
+                    <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="time" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend />
-                <Area type="monotone" dataKey="solar" stroke="#facc15"
-                  fill="url(#solar)" name="Solar (kWh)" strokeWidth={2} />
-                <Area type="monotone" dataKey="consumption" stroke="#3b82f6"
-                  fill="url(#consumption)" name="Consumption (kWh)" strokeWidth={2} />
-                <Area type="monotone" dataKey="surplus" stroke="#22c55e"
-                  fill="none" name="Surplus (kWh)" strokeWidth={2} strokeDasharray="5 5" />
+                <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.3} />
+                <XAxis dataKey="time" tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} interval={2} />
+                <YAxis tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} />
+                <Tooltip
+                  contentStyle={{
+                    background: "var(--surface-container-high)",
+                    border: "1px solid var(--outline-variant)",
+                    borderRadius: "12px",
+                    color: "var(--on-surface)",
+                  }}
+                />
+                <Legend wrapperStyle={{ fontSize: 11 }} />
+                <Area type="monotone" dataKey="solar" stroke="#ffb95f" fill="url(#solar)" name="Solar (kWh)" strokeWidth={2} />
+                <Area type="monotone" dataKey="consumption" stroke="#22d3ee" fill="url(#consumption)" name="Consumption (kWh)" strokeWidth={2} />
+                <Area type="monotone" dataKey="surplus" stroke="#4edea3" fill="none" name="Surplus (kWh)" strokeWidth={2} strokeDasharray="5 5" />
               </AreaChart>
             </ResponsiveContainer>
-          </CardContent>
-        </Card>
+          )}
+        </div>
 
-        <Card className="border-0 shadow-sm">
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle className="text-base font-semibold text-slate-800">
-                Weekly Energy Summary
-              </CardTitle>
-              <Badge className="bg-purple-100 text-purple-700 hover:bg-purple-100">7 Days</Badge>
-            </div>
-          </CardHeader>
-          <CardContent>
-            <ResponsiveContainer width="100%" height={250}>
-              <BarChart data={weeklyData}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                <XAxis dataKey="day" tick={{ fontSize: 12 }} />
-                <YAxis tick={{ fontSize: 12 }} />
-                <Tooltip />
-                <Legend />
-                <Bar dataKey="generated" fill="#facc15" name="Generated (kWh)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="consumed" fill="#3b82f6" name="Consumed (kWh)" radius={[4, 4, 0, 0]} />
-                <Bar dataKey="exported" fill="#22c55e" name="Exported (kWh)" radius={[4, 4, 0, 0]} />
-              </BarChart>
-            </ResponsiveContainer>
-          </CardContent>
-        </Card>
+        <div className="glass-card rounded-2xl p-5">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-headline-md text-on-surface">Weekly Energy Summary</h3>
+            <span className="text-label-md px-3 py-1 rounded-full bg-primary/15 text-primary">
+              7 Days
+            </span>
+          </div>
+          <ResponsiveContainer width="100%" height={200}>
+            <BarChart data={weeklyData}>
+              <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.3} />
+              <XAxis dataKey="day" tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} />
+              <YAxis tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} />
+              <Tooltip
+                contentStyle={{
+                  background: "var(--surface-container-high)",
+                  border: "1px solid var(--outline-variant)",
+                  borderRadius: "12px",
+                  color: "var(--on-surface)",
+                }}
+                cursor={{ fill: "var(--on-surface)", opacity: 0.05 }}
+              />
+              <Legend wrapperStyle={{ fontSize: 11 }} />
+              <Bar dataKey="generated" fill="#ffb95f" name="Generated (kWh)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="consumed" fill="#22d3ee" name="Consumed (kWh)" radius={[4, 4, 0, 0]} />
+              <Bar dataKey="exported" fill="#4edea3" name="Exported (kWh)" radius={[4, 4, 0, 0]} />
+            </BarChart>
+          </ResponsiveContainer>
+        </div>
       </div>
 
       {/* Bottom Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
         {[
-          { label: "CO₂ Saved", value: "24.6 kg", sub: "Today" },
-          { label: "Trees Equivalent", value: "1.2", sub: "Trees saved" },
-          { label: "Grid Independence", value: "78%", sub: "Self-sufficient" },
-          { label: "Monthly Savings", value: "₹8,240", sub: "This month" },
+          { label: "CO₂ Saved", value: loading ? "..." : `${(solar * 0.82).toFixed(1)} kg`, sub: "Today", color: "text-tertiary" },
+          { label: "Trees Equivalent", value: loading ? "..." : `${(solar * 0.04).toFixed(1)}`, sub: "Trees saved", color: "text-tertiary" },
+          { label: "Grid Independence", value: loading ? "..." : `${consumed > 0 ? Math.min(100, Math.round((solar / consumed) * 100)) : 0}%`, sub: "Self-sufficient", color: "text-accent-cyan" },
+          { label: "Monthly Savings", value: "₹8,240", sub: "This month", color: "text-secondary" },
         ].map((stat) => (
-          <Card key={stat.label} className="border-0 shadow-sm bg-slate-900 text-white">
-            <CardContent className="p-4">
-              <p className="text-xl font-bold text-yellow-400">{stat.value}</p>
-              <p className="text-sm text-slate-300 mt-1">{stat.label}</p>
-              <p className="text-xs text-slate-500 mt-1">{stat.sub}</p>
-            </CardContent>
-          </Card>
+          <div key={stat.label} className="glass-card rounded-xl p-4 bg-surface-container-lowest/60">
+            <p className={`text-headline-md ${stat.color}`}>{stat.value}</p>
+            <p className="text-body-md text-on-surface-variant">{stat.label}</p>
+            <p className="text-label-md text-outline mt-0.5">{stat.sub}</p>
+          </div>
         ))}
       </div>
     </div>
   );
 }
-

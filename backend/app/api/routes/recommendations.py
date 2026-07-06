@@ -1,14 +1,25 @@
 from fastapi import APIRouter, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.core.deps import get_current_user
 from app.models.recommendation import Recommendation
+from app.models.user import User
 from typing import List
 
 router = APIRouter(prefix="/recommendations", tags=["Recommendations"])
 
 @router.get("/")
-def get_recommendations(db: Session = Depends(get_db)):
-    recs = db.query(Recommendation).order_by(Recommendation.created_at.desc()).limit(10).all()
+def get_recommendations(
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user),
+):
+    recs = (
+        db.query(Recommendation)
+        .filter(Recommendation.user_id == current_user.id)
+        .order_by(Recommendation.created_at.desc())
+        .limit(10)
+        .all()
+    )
     if not recs:
         return _mock_recommendations()
     return recs

@@ -1,5 +1,6 @@
 import Sidebar from "@/components/layout/Sidebar";
-import Navbar from "@/components/layout/Navbar";
+import TopBar from "@/components/layout/TopBar";
+import MobileNav from "@/components/layout/MobileNav";
 
 export default function DashboardLayout({
   children,
@@ -7,14 +8,18 @@ export default function DashboardLayout({
   children: React.ReactNode;
 }) {
   return (
-    <div className="flex min-h-screen bg-slate-50">
+    <div className="min-h-screen bg-background text-on-surface">
       <Sidebar />
-      <div className="flex-1 flex flex-col">
-        <Navbar />
-        <main className="flex-1 p-6 overflow-auto">
+      <TopBar />
+      <main className="md:ml-64 pt-16 pb-24 md:pb-4 min-h-screen">
+        <div
+          className="px-4 md:px-6 py-3"
+          style={{ zoom: "0.9" }}
+        >
           {children}
-        </main>
-      </div>
+        </div>
+      </main>
+      <MobileNav />
     </div>
   );
 }

@@ -1,157 +1,211 @@
 "use client";
 import { useEffect, useState } from "react";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Badge } from "@/components/ui/badge";
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid,
-  Tooltip, ResponsiveContainer, Legend
+  Tooltip, ResponsiveContainer, Legend,
 } from "recharts";
+import { fetchForecasts, fetchHourlyForecast, fetchForecastAccuracy } from "@/lib/api";
 
 export default function ForecastPage() {
   const [weekly, setWeekly] = useState<any[]>([]);
   const [hourly, setHourly] = useState<any[]>([]);
   const [accuracy, setAccuracy] = useState<any>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
+  const [tab, setTab] = useState<"24h" | "7d">("24h");
 
   useEffect(() => {
     Promise.all([
-      fetch("https://solix-swys.onrender.com/forecast/").then(r => r.json()),
-      fetch("https://solix-swys.onrender.com/forecast/hourly").then(r => r.json()),
-      fetch("https://solix-swys.onrender.com/forecast/accuracy").then(r => r.json()),
-    ]).then(([w, h, a]) => {
-      setWeekly(w);
-      setHourly(h);
-      setAccuracy(a);
-      setLoading(false);
-    });
+      fetchForecasts(),
+      fetchHourlyForecast(),
+      fetchForecastAccuracy(),
+    ])
+      .then(([w, h, a]) => {
+        setWeekly(w);
+        setHourly(h);
+        setAccuracy(a);
+        setLoading(false);
+      })
+      .catch((err) => {
+        setError(err.message || "Could not load forecast data");
+        setLoading(false);
+      });
   }, []);
 
   const totalSolar = weekly.reduce((a, r) => a + r.predicted_solar, 0).toFixed(1);
-  const peakLoad = weekly.length ? Math.max(...weekly.map(r => r.predicted_load)).toFixed(1) : "—";
+  const peakLoad = weekly.length ? Math.max(...weekly.map((r) => r.predicted_load)).toFixed(1) : "—";
+
+  const stats = [
+    {
+      value: loading ? "..." : accuracy?.accuracy != null ? `${accuracy.accuracy}%` : "—",
+      label: "Forecast Accuracy",
+      sub: loading ? "" : accuracy?.message || accuracy?.model || "",
+      icon: "verified",
+      color: "text-tertiary",
+      bg: "bg-tertiary/10",
+    },
+    {
+      value: loading ? "..." : `${totalSolar} kWh`,
+      label: "7-Day Solar Forecast",
+      sub: "High confidence",
+      icon: "wb_sunny",
+      color: "text-secondary",
+      bg: "bg-secondary/10",
+    },
+    {
+      value: loading ? "..." : `${peakLoad} kWh`,
+      label: "Peak Demand",
+      sub: "Expected this week",
+      icon: "bolt",
+      color: "text-accent-cyan",
+      bg: "bg-accent-cyan/10",
+    },
+  ];
+
+  const tooltipStyle = {
+    background: "var(--surface-container-high)",
+    border: "1px solid var(--outline-variant)",
+    borderRadius: "12px",
+    color: "var(--on-surface)",
+  };
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-slate-800">Forecasting Engine</h1>
-        <p className="text-slate-500 mt-1">Prophet + LSTM powered predictions</p>
+    <div className="space-y-4">
+      {/* Header */}
+      <div className="flex items-center gap-3">
+        <div className="w-11 h-11 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+          <span className="material-symbols-outlined">trending_up</span>
+        </div>
+        <div>
+          <h1 className="text-headline-md text-on-surface">Forecasting Engine</h1>
+          <p className="text-body-md text-on-surface-variant">
+            Prophet + historical-average powered predictions
+          </p>
+        </div>
       </div>
 
-      <div className="grid grid-cols-3 gap-4">
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-2xl font-bold text-slate-800">
-              {loading ? "..." : `${accuracy?.accuracy}%`}
-            </p>
-            <p className="text-sm font-medium text-slate-600 mt-1">Forecast Accuracy</p>
-            <p className="text-xs text-slate-400 mt-1">{accuracy?.model}</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-2xl font-bold text-slate-800">
-              {loading ? "..." : `${totalSolar} kWh`}
-            </p>
-            <p className="text-sm font-medium text-slate-600 mt-1">7-Day Solar Forecast</p>
-            <p className="text-xs text-slate-400 mt-1">High confidence</p>
-          </CardContent>
-        </Card>
-        <Card className="border-0 shadow-sm">
-          <CardContent className="p-6">
-            <p className="text-2xl font-bold text-slate-800">
-              {loading ? "..." : `${peakLoad} kWh`}
-            </p>
-            <p className="text-sm font-medium text-slate-600 mt-1">Peak Demand</p>
-            <p className="text-xs text-slate-400 mt-1">Expected this week</p>
-          </CardContent>
-        </Card>
-      </div>
+      {error && (
+        <div className="glass-card rounded-xl px-4 py-3 text-error text-body-md border-l-4 border-l-error">
+          {error}
+        </div>
+      )}
 
-      <Card className="border-0 shadow-sm">
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle className="text-base font-semibold text-slate-800">
-              Energy Forecast
-            </CardTitle>
-            <Badge className="bg-green-100 text-green-700 hover:bg-green-100">
-              Live from API
-            </Badge>
+      {/* Stat Cards */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        {stats.map((s) => (
+          <div key={s.label} className="glass-card rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className={`w-10 h-10 ${s.bg} rounded-lg flex items-center justify-center ${s.color}`}>
+                <span className="material-symbols-outlined text-[20px]">{s.icon}</span>
+              </div>
+            </div>
+            <p className={`text-headline-lg ${s.color}`}>{s.value}</p>
+            <p className="text-body-md text-on-surface-variant mt-1">{s.label}</p>
+            <p className="text-label-md text-outline mt-1 truncate">{s.sub}</p>
           </div>
-        </CardHeader>
-        <CardContent>
-          {loading ? (
-            <p className="text-slate-400 text-sm py-8 text-center">Loading forecast data...</p>
-          ) : (
-            <Tabs defaultValue="24h">
-              <TabsList className="mb-4">
-                <TabsTrigger value="24h">Next 24 Hours</TabsTrigger>
-                <TabsTrigger value="7d">Next 7 Days</TabsTrigger>
-              </TabsList>
+        ))}
+      </div>
 
-              <TabsContent value="24h">
-                <ResponsiveContainer width="100%" height={300}>
-                  <AreaChart data={hourly}>
-                    <defs>
-                      <linearGradient id="solar" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
-                      </linearGradient>
-                      <linearGradient id="load" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="hour" tick={{ fontSize: 11 }} interval={2} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Legend />
-                    <Area type="monotone" dataKey="predicted_solar" stroke="#facc15"
-                      fill="url(#solar)" name="Solar (kWh)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="predicted_load" stroke="#3b82f6"
-                      fill="url(#load)" name="Load (kWh)" strokeWidth={2} />
-                  </AreaChart>
-                </ResponsiveContainer>
-              </TabsContent>
+      {/* Forecast Chart */}
+      <div className="glass-card rounded-2xl p-5">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-headline-md text-on-surface">Energy Forecast</h3>
+          <span className="text-label-md px-3 py-1 rounded-full bg-tertiary/15 text-tertiary">
+            Live from API
+          </span>
+        </div>
 
-              <TabsContent value="7d">
-                <ResponsiveContainer width="100%" height={300}>
+        {loading ? (
+          <p className="text-on-surface-variant text-body-md py-12 text-center">
+            Loading forecast data...
+          </p>
+        ) : (
+          <>
+            {/* Tab toggle */}
+            <div className="inline-flex bg-surface-container-highest/40 p-1 rounded-xl mb-4">
+              <button
+                onClick={() => setTab("24h")}
+                className={`px-4 py-2 rounded-lg text-label-md transition-all ${
+                  tab === "24h"
+                    ? "bg-primary text-on-primary"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+                suppressHydrationWarning
+              >
+                Next 24 Hours
+              </button>
+              <button
+                onClick={() => setTab("7d")}
+                className={`px-4 py-2 rounded-lg text-label-md transition-all ${
+                  tab === "7d"
+                    ? "bg-primary text-on-primary"
+                    : "text-on-surface-variant hover:text-on-surface"
+                }`}
+                suppressHydrationWarning
+              >
+                Next 7 Days
+              </button>
+            </div>
+
+            {tab === "24h" && (
+              <ResponsiveContainer width="100%" height={280}>
+                <AreaChart data={hourly}>
+                  <defs>
+                    <linearGradient id="solar" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#ffb95f" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#ffb95f" stopOpacity={0} />
+                    </linearGradient>
+                    <linearGradient id="load" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="#22d3ee" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="#22d3ee" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.3} />
+                  <XAxis dataKey="hour" tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} interval={2} />
+                  <YAxis tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} />
+                  <Tooltip contentStyle={tooltipStyle} />
+                  <Legend wrapperStyle={{ fontSize: 11 }} />
+                  <Area type="monotone" dataKey="predicted_solar" stroke="#ffb95f" fill="url(#solar)" name="Solar (kWh)" strokeWidth={2} />
+                  <Area type="monotone" dataKey="predicted_load" stroke="#22d3ee" fill="url(#load)" name="Load (kWh)" strokeWidth={2} />
+                </AreaChart>
+              </ResponsiveContainer>
+            )}
+
+            {tab === "7d" && (
+              <>
+                <ResponsiveContainer width="100%" height={280}>
                   <AreaChart data={weekly}>
                     <defs>
                       <linearGradient id="solar7" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#facc15" stopOpacity={0.3} />
-                        <stop offset="95%" stopColor="#facc15" stopOpacity={0} />
+                        <stop offset="5%" stopColor="#ffb95f" stopOpacity={0.3} />
+                        <stop offset="95%" stopColor="#ffb95f" stopOpacity={0} />
                       </linearGradient>
                     </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
-                    <XAxis dataKey="forecast_date" tick={{ fontSize: 11 }}
-                      tickFormatter={(v) => v.slice(5)} />
-                    <YAxis tick={{ fontSize: 11 }} />
-                    <Tooltip />
-                    <Legend />
-                    <Area type="monotone" dataKey="predicted_solar" stroke="#facc15"
-                      fill="url(#solar7)" name="Solar (kWh)" strokeWidth={2} />
-                    <Area type="monotone" dataKey="predicted_load" stroke="#3b82f6"
-                      fill="none" name="Load (kWh)" strokeWidth={2} />
+                    <CartesianGrid strokeDasharray="3 3" stroke="var(--outline-variant)" opacity={0.3} />
+                    <XAxis dataKey="forecast_date" tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} tickFormatter={(v) => v.slice(5)} />
+                    <YAxis tick={{ fontSize: 11, fill: "var(--on-surface-variant)" }} />
+                    <Tooltip contentStyle={tooltipStyle} />
+                    <Legend wrapperStyle={{ fontSize: 11 }} />
+                    <Area type="monotone" dataKey="predicted_solar" stroke="#ffb95f" fill="url(#solar7)" name="Solar (kWh)" strokeWidth={2} />
+                    <Area type="monotone" dataKey="predicted_load" stroke="#22d3ee" fill="none" name="Load (kWh)" strokeWidth={2} />
                   </AreaChart>
                 </ResponsiveContainer>
 
-                <div className="mt-4 grid grid-cols-7 gap-2">
+                <div className="mt-4 grid grid-cols-4 sm:grid-cols-7 gap-2">
                   {weekly.map((d, i) => (
-                    <div key={i} className="text-center p-2 bg-slate-50 rounded-lg">
-                      <p className="text-xs text-slate-400">{d.forecast_date.slice(5)}</p>
-                      <p className="text-sm font-bold text-yellow-600 mt-1">{d.predicted_solar}</p>
-                      <p className="text-xs text-slate-500">kWh</p>
-                      <p className="text-xs text-green-600 mt-1">{Math.round(d.confidence * 100)}%</p>
+                    <div key={i} className="text-center p-3 rounded-xl bg-surface-container-highest/40 border border-outline-variant/20">
+                      <p className="text-label-md text-outline">{d.forecast_date.slice(5)}</p>
+                      <p className="text-headline-md text-secondary mt-1">{d.predicted_solar}</p>
+                      <p className="text-label-md text-on-surface-variant">kWh</p>
+                      <p className="text-label-md text-tertiary mt-1">{Math.round(d.confidence * 100)}%</p>
                     </div>
                   ))}
                 </div>
-              </TabsContent>
-            </Tabs>
-          )}
-        </CardContent>
-      </Card>
+              </>
+            )}
+          </>
+        )}
+      </div>
     </div>
   );
 }
-

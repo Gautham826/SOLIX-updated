@@ -1,22 +1,26 @@
-import { NextResponse } from "next/server";
-import type { NextRequest } from "next/server";
+import { NextResponse } from 'next/server'
+import type { NextRequest } from 'next/server'
 
 export function middleware(request: NextRequest) {
-  const token = request.cookies.get("solix_token")?.value;
-  const { pathname } = request.nextUrl;
+  const token = request.cookies.get('solix_token')?.value
+  const { pathname } = request.nextUrl
 
-  const publicPaths = ["/login", "/register"];
-  const isPublic = publicPaths.some((p) => pathname.startsWith(p));
+  const isAuth = pathname.startsWith('/login') || pathname.startsWith('/register')
+  const isDashboard = pathname.startsWith('/dashboard') ||
+    pathname.startsWith('/forecast') ||
+    pathname.startsWith('/surplus') ||
+    pathname.startsWith('/recommendations') ||
+    pathname.startsWith('/ingestion')
 
-  if (!isPublic && !token) {
-    return NextResponse.redirect(new URL("/login", request.url));
+  if (isDashboard && !token) {
+    return NextResponse.redirect(new URL('/login', request.url))
   }
-
-  return NextResponse.next();
+  if (isAuth && token) {
+    return NextResponse.redirect(new URL('/dashboard', request.url))
+  }
+  return NextResponse.next()
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/forecast/:path*", "/surplus/:path*",
-    "/optimize/:path*", "/recommendations/:path*", "/ingestion/:path*",
-    "/settings/:path*"],
-};
+  matcher: ['/((?!api|_next/static|_next/image|favicon.ico).*)'],
+}
