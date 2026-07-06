@@ -13,7 +13,11 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["http://localhost:3000", "https://solix-black.vercel.app"],
+    allow_origins=[
+        "http://localhost:3000",
+        "https://solix-black.vercel.app",
+        "https://solix-updated.vercel.app",  # add your actual URL here
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
